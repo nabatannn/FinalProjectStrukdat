@@ -1,6 +1,3 @@
-"""2EZ4U APP - jalankan dengan:  python app.py"""
-
-
 def main():
     try:
         from frontend.ui import jalankan

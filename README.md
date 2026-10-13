@@ -51,9 +51,13 @@ Milestone 2 : Stack & Queue System (m2_antrean.py)
 - Penanganan Overflow/Underflow : Memanfaatkan variabel pencacah count untuk membedakan kondisi Antrean Kosong (count == 0) dan Antrean Penuh (count == K) saat front == rear.
 
 Milestone 3: Sorting & Searching (m3_laporan.py)
-1. Algoritma Pengurutan (Sorting)
-- Insertion Sort (O(n^2)): In-place dan stabil. Optimal untuk n < 2000 atau data yang hampir terurut. Menolak dataset besar ($>20.000$) untuk mencegah sistem freeze.
-- Merge Sort (O(n\log n)): Divide and conquer, stabil. Mampu menangani hingga 200.000 data
+1. Algoritma Pengurutan (Sorting) - berbagai macam jenis sort
+- Insertion Sort (O(n^2)): In-place dan stabil. Optimal untuk data kecil atau hampir terurut.
+- Selection Sort (O(n^2)): Memilih elemen terkecil tiap putaran. Perbandingan selalu n(n-1)/2 dan tidak stabil.
+- Bubble Sort (O(n^2)): Menukar pasangan bersebelahan, stabil, dan berhenti dini saat data sudah rapi.
+- Merge Sort (O(n log n)): Divide and conquer, stabil, mampu menangani hingga 200.000 data.
+- Quick Sort (rata-rata O(n log n)): Partisi tiga arah dengan pivot median-of-three, tahan terhadap data berduplikat.
+- Algoritma kuadratik (insertion/selection/bubble) menolak dataset > 20.000 baris untuk mencegah sistem freeze; gunakan Merge/Quick Sort untuk data besar.
 
 2. Algoritma Pencarian (Searching)
 - Linear Search (O(n)) : Menelusuri seluruh data satu per satu tanpa syarat urutan.
