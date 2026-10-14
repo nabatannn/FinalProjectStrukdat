@@ -1,36 +1,21 @@
-"""2EZ4U Food Delivery - antarmuka Tkinter sekaligus pengontrol menu.
-
-Seluruh berkas ini adalah satu-satunya modul frontend. Bagian pengontrol
-(kelas Aplikasi beserta menu dan handler M1-M3) tidak bergantung pada Tkinter
-sehingga alurnya bisa diuji terpisah dari tampilan.
-"""
 import os
 import tkinter as tk
 from tkinter import ttk
 
-from backend.m1_pesanan import (BELUM, NAMA_PRIORITAS, Array, DataPesanan,
-                                fmt_int, fmt_jam, fmt_ms, fmt_rp, mulai,
-                                muat_pesanan, selesai_ms)
-from backend.m2_antrean import (KesalahanEkspresi, LayananAntrean, hitung,
-                                ke_postfix)
-from backend.m3_laporan import (Pencacah, binary_search, bubble_sort,
-                                insertion_sort, linear_search, merge_sort,
-                                quick_sort, selection_sort, terurut)
+from backend.m1_pesanan import (BELUM, NAMA_PRIORITAS, Array, DataPesanan, Pencacah,
+                                fmt_int, fmt_jam, fmt_ms, fmt_rp, mulai, muat_pesanan,
+                                selesai_ms)
+from backend.m2_antrean import KesalahanEkspresi, LayananAntrean, hitung, ke_postfix
+from backend.m3_laporan import (binary_search, insertion_sort, linear_search,
+                                merge_sort, terurut)
 
-BATAS_KUADRATIK = 20000
+BATAS_INSERTION = 20000
 BARIS_TAMPIL = 200
 
 KOLOM_REKAMAN = ("#", "oid", "pelanggan", "resto", "menu", "harga",
                  "prio", "masuk", "selesai", "status")
 
-WARNA_HEADER = "#1f3a5f"
-WARNA_AKTIF = "#dbe7f5"
-WARNA_CATATAN = "#fdf6e3"
-WARNA_GALAT = "#b00020"
-FONT_MONO = ("Menlo", 9)
 
-
-# =========================================================== BAGIAN PENGCONTROL
 def kolom_sort(nama):
     if nama == "oid":
         return 0
@@ -39,40 +24,17 @@ def kolom_sort(nama):
     return 7
 
 
-def _sort_fn(algoritma):
-    """-> (fungsi, nama tampilan, kuadratik?, catatan)."""
-    if algoritma == "insertion":
-        return (insertion_sort, "insertion sort", True,
-                "Menggeser hanya bila LEBIH BESAR (>), jadi stabil. Lipatduakan jumlah baris: "
-                "perbandingan naik kira-kira empat kali. Bandingkan dengan MERGE/QUICK SORT.")
-    if algoritma == "selection":
-        return (selection_sort, "selection sort", True,
-                "Tiap putaran memilih terkecil dengan satu penukaran; jumlah perbandingan SELALU n(n-1)/2 "
-                "sehingga tidak peduli data sudah terurut atau belum. Tidak stabil.")
-    if algoritma == "bubble":
-        return (bubble_sort, "bubble sort", True,
-                "Membandingkan pasangan bersebelahan; stabil dan berhenti dini saat tidak ada penukaran, "
-                "jadi paling cepat pada data yang hampir terurut.")
-    if algoritma == "quick":
-        return (quick_sort, "quick sort", False,
-                "Pivot median-of-three dengan partisi Hoare; rata-rata O(n log n) dan tetap cepat pada data "
-                "terurut maupun berduplikat. Sisi kecil lewat rekursi, sisi besar lewat loop agar kedalaman O(log n).")
-    return (merge_sort, "merge sort", False,
-            "Penggabungan memakai <=, kiri didahulukan saat kunci sama, jadi stabil. Lipatduakan "
-            "jumlah baris: perbandingan naik sekitar dua kali.")
-
-
 class Hasil:
     def __init__(self, judul=""):
         self.judul = judul
-        self.ringkasan = []
+        self.ringkasan = []        # baris teks di atas tabel
         self.kolom = ()
-        self.baris = []
+        self.baris = []            # larik tuple string
         self.catatan = ""
-        self.modul = ""
+        self.modul = ""            # mis. "M2 - queue naif"
         self.ms = 0.0
         self.galat = False
-        self.perintah = ""
+        self.perintah = ""         # teks untuk panel COMMAND
 
 
 class Param:
@@ -94,10 +56,8 @@ class Menu:
         self.params = params
 
 
-P_NAMA = Param("nama", "Nama pelanggan", "Pelanggan Baru",
-               "nama untuk pesanan yang akan dibuat")
-P_NOMOR = Param("nomor", "Nomor urut pesanan (mulai 1)", "1",
-                "posisi dalam barisan, bukan oid")
+P_NAMA = Param("nama", "Nama pelanggan", "Pelanggan Baru", "nama untuk pesanan yang akan dibuat")
+P_NOMOR = Param("nomor", "Nomor urut pesanan (mulai 1)", "1", "posisi dalam barisan, bukan oid")
 
 
 def _ket_jenis(jenis):
@@ -113,15 +73,16 @@ def _daftar_menu():
     G = "DATA"
     m.append(Menu(G, "Load", "load", "Muat data ke semua struktur",
                   "Membaca pesanan.csv, lalu mengisi array, linked list, dan kedua antrean."))
-    G = "M1 - DATA PESANAN"
     for nama, kode in (("ARRAY", "array"), ("LINKEDLIST", "linked")):
+        G = "M1 - DATA PESANAN"
         m.append(Menu(G, nama + " - LIHAT PESANAN", "m1_lihat_" + kode,
                       nama.title() + ": lihat pesanan ke-i",
                       "Array membuka langsung lewat indeks, linked list menelusuri simpul satu per satu.",
                       (P_NOMOR, Param("jumlah", "Jumlah baris", "10", "berapa pesanan ditampilkan"))))
         for jenis in ("REGULER", "PRIORITAS", "VIP"):
             m.append(Menu(G, nama + " - TAMBAH PESANAN " + jenis, "m1_tambah_%s_%s" % (kode, jenis),
-                          "%s: pesanan %s" % (nama.title(), jenis), _ket_jenis(jenis),
+                          "%s: pesanan %s" % (nama.title(), jenis),
+                          _ket_jenis(jenis),
                           (P_NAMA,)))
         m.append(Menu(G, nama + " - HAPUS PESANAN", "m1_hapus_" + kode,
                       nama.title() + ": hapus pesanan ke-i",
@@ -137,8 +98,7 @@ def _daftar_menu():
                   "Mengambil catatan teratas tumpukan undo, lalu menjalankan kebalikannya."))
     m.append(Menu(G, "STACK - REDO", "stack_redo", "Stack: kerjakan lagi aksi yang dibatalkan",
                   "Mengambil catatan teratas tumpukan redo, lalu mengerjakan ulang aksi aslinya."))
-    m.append(Menu(G, "QUEUE - ENQUEUE", "queue_enqueue",
-                  "Queue: pesanan baru masuk ke belakang",
+    m.append(Menu(G, "QUEUE - ENQUEUE", "queue_enqueue", "Queue: pesanan baru masuk ke belakang",
                   "Menambah pesanan di ujung belakang kedua antrean sekaligus.", (P_NAMA,)))
     for nama, kode in (("NAIF", "naif"), ("CIRCULAR", "circular")):
         m.append(Menu(G, "QUEUE - DEQUEUE " + nama, "queue_dequeue_" + kode,
@@ -147,25 +107,13 @@ def _daftar_menu():
                       else "Versi melingkar hanya memajukan penunjuk front.",
                       (Param("n", "Berapa kali dequeue", "1", "coba 1 lalu 100 untuk melihat bedanya"),)))
     G = "M3 - SORT DAN SEARCH"
-    ps = (Param("jumlah", "Jumlah baris diurutkan", "2000",
-                "diambil dari awal data; coba 1.000 lalu 2.000 lalu 4.000"),
-          Param("kunci", "Diurutkan menurut", "harga",
-                "oid (teks), harga (angka), selesai (waktu selesai)",
+    ps = (Param("jumlah", "Jumlah baris diurutkan", "2000", "diambil dari awal data; coba 1.000 lalu 2.000 lalu 4.000"),
+          Param("kunci", "Diurutkan menurut", "harga", "oid (teks), harga (angka), selesai (waktu selesai)",
                 ("oid", "harga", "selesai")))
-    algoritma = (
-        ("INSERTION SORT", "insertion", "Sort: insertion sort, O(n^2) - stabil",
-         "Setiap elemen digeser mundur sampai menemukan tempatnya. Sederhana, tetapi kerjanya tumbuh kuadratik."),
-        ("SELECTION SORT", "selection", "Sort: selection sort, O(n^2) - tidak stabil",
-         "Tiap putaran mencari elemen terkecil pada sisa larik, lalu menukarnya ke depan."),
-        ("BUBBLE SORT", "bubble", "Sort: bubble sort, O(n^2) - stabil",
-         "Bandingkan pasangan bersebelahan dan tukar bila salah urut; putaran berhenti dini bila sudah rapi."),
-        ("MERGE SORT", "merge", "Sort: merge sort, O(n log n) - stabil",
-         "Larik dibelah dua terus-menerus, lalu potongan yang sudah terurut disatukan kembali."),
-        ("QUICK SORT", "quick", "Sort: quick sort, rata-rata O(n log n)",
-         "Pilih pivot lalu partisi tiga arah (lebih kecil, sama, lebih besar); tahan terhadap data berduplikat."),
-    )
-    for label, kode, judul, desk in algoritma:
-        m.append(Menu(G, "SORT - " + label, "sort_" + kode, judul, desk, ps))
+    m.append(Menu(G, "SORT - INSERTION SORT", "sort_insertion", "Sort: insertion sort, O(n^2)",
+                  "Setiap elemen digeser mundur sampai menemukan tempatnya. Sederhana, tetapi kerjanya tumbuh kuadratik.", ps))
+    m.append(Menu(G, "SORT - MERGE SORT", "sort_merge", "Sort: merge sort, O(n log n)",
+                  "Larik dibelah dua terus-menerus, lalu potongan yang sudah terurut disatukan kembali.", ps))
     po = (Param("oid", "Nomor pesanan (oid)", "O-137442", "format O-000001 sampai O-200000"),)
     m.append(Menu(G, "SEARCH - LINEAR SEARCH", "search_linear", "Search: linear search, O(n)",
                   "Memeriksa pesanan satu per satu dari depan. Tidak menuntut data terurut.", po))
@@ -185,7 +133,7 @@ def _bulat(teks, nama, minimum=None, maksimum=None):
         if i == 0 and c == "-":
             negatif = True
         elif c == "." and i > 0:
-            continue
+            continue                      # boleh pemisah ribuan: 20.000
         elif "0" <= c <= "9":
             n = n * 10 + (ord(c) - 48)
         else:
@@ -230,13 +178,14 @@ class Aplikasi:
         self.dimuat = False
         self.data = None
         self.antrean = None
-        self.versi = 0
+        self.versi = 0                 # naik tiap kali M1 berubah (cache dibuang)
         self._snap = None
         self._snap_versi = -1
         self._urut_oid = None
         self._urut_versi = -1
-        self.log = []
+        self.log = []                  # panel COMMAND: tuple (perintah, modul, ms)
 
+    # ------------------------------------------------------------ dasar
     def cari_menu(self, kunci):
         for i in range(len(self.menu)):
             if self.menu[i].kunci == kunci:
@@ -244,6 +193,7 @@ class Aplikasi:
         raise KeyError(kunci)
 
     def jalankan(self, kunci, nilai):
+        """`nilai` = tuple string sesuai urutan Menu.params. -> Hasil."""
         m = self.cari_menu(kunci)
         h = Hasil(m.judul)
         try:
@@ -276,13 +226,13 @@ class Aplikasi:
             return "m1_hapus"
         if kunci[:14] == "queue_dequeue_":
             return "queue_dequeue"
-        if kunci == "stack_undo" or kunci == "stack_redo":
-            return "stack_aksi"
-        if kunci[:5] == "sort_":
-            return "sort"
         return kunci
 
+    def _akhir_m1(self):
+        self.versi += 1
+
     def _snapshot(self):
+        """Larik terpadat dari array M1 (tanpa ruang cadangan), di-cache per versi."""
         if self._snap_versi != self.versi or self._snap is None:
             self._snap = self.data.array.ke_larik()
             self._snap_versi = self.versi
@@ -373,7 +323,7 @@ class Aplikasi:
         rec, pos, biaya = self.data.tambah(s, jenis, nama)
         h.ms = selesai_ms(t0)
         self.antrean.catat_m1("ORDER", s, pos, rec)
-        self.versi += 1
+        self._akhir_m1()
         h.modul = "M1 - " + s
         total = self.data.struktur(s).size
         h.ringkasan = ["%s masuk sebagai %s di posisi %s dari %s." % (
@@ -393,7 +343,7 @@ class Aplikasi:
         rec, biaya = self.data.hapus_pada(s, n - 1)
         h.ms = selesai_ms(t0)
         self.antrean.catat_m1("HAPUS", s, n - 1, rec)
-        self.versi += 1
+        self._akhir_m1()
         h.modul = "M1 - " + s
         h.ringkasan = ["%s (urutan ke-%s) dicabut dari %s." % (rec[0], fmt_int(n), s),
                        ("%s elemen digeser." if s == "array" else "%s simpul ditelusuri.") % fmt_int(biaya),
@@ -423,33 +373,41 @@ class Aplikasi:
         h.catatan = ("Baris 1.x tahap konversi, baris 2.x tahap evaluasi. Tanda ( hanya mengatur stack dan "
                      "tidak pernah muncul di output. Operand kanan selalu keluar lebih dulu.")
 
-    def _tampil_aksi(self, h, daftar, pesan):
+    def _tampil_aksi(self, h, a, pesan):
         h.ringkasan = [pesan, self._panjang_antrean(), self._undo_redo_teks()]
         h.kolom = ("#", "oid", "pelanggan", "resto", "menu")
         baris = []
-        tampil = len(daftar) if len(daftar) < BARIS_TAMPIL else BARIS_TAMPIL
+        tampil = len(a.daftar) if len(a.daftar) < BARIS_TAMPIL else BARIS_TAMPIL
         for i in range(tampil):
-            r = daftar[i]
+            r = a.daftar[i]
             baris.append((str(i + 1), r[0], r[1], r[2], r[3]))
         h.baris = baris
-        if len(daftar) > tampil:
-            h.catatan = "Menampilkan %d dari %d pesanan." % (tampil, len(daftar))
+        if len(a.daftar) > tampil:
+            h.catatan = "Menampilkan %d dari %d pesanan." % (tampil, len(a.daftar))
 
-    def _h_stack_aksi(self, h, kunci, nilai):
-        undo = kunci == "stack_undo"
+    def _h_stack_undo(self, h, kunci, nilai):
         t0 = mulai()
-        r = self.antrean.undo_last() if undo else self.antrean.redo_last()
+        r = self.antrean.undo_last()
         h.ms = selesai_ms(t0)
         h.modul = "M2 - stack"
         if r is None:
-            h.ringkasan = [("Tidak ada aksi yang bisa dibatalkan." if undo
-                            else "Tumpukan redo kosong, tidak ada yang diulang."),
-                           self._undo_redo_teks()]
+            h.ringkasan = ["Tidak ada aksi yang bisa dibatalkan.", self._undo_redo_teks()]
             return
-        self.versi += 1
+        self._akhir_m1()
         self._tampil_aksi(h, r[0], r[1])
-        h.catatan = ("Kebalikan dari aksi dijalankan; catatan pindah ke tumpukan redo." if undo
-                     else "Redo mengerjakan ULANG aksi aslinya, bukan kebalikannya. Aksi baru apa pun mengosongkan redo.")
+        h.catatan = "Kebalikan dari aksi dijalankan; catatan pindah ke tumpukan redo."
+
+    def _h_stack_redo(self, h, kunci, nilai):
+        t0 = mulai()
+        r = self.antrean.redo_last()
+        h.ms = selesai_ms(t0)
+        h.modul = "M2 - stack"
+        if r is None:
+            h.ringkasan = ["Tumpukan redo kosong, tidak ada yang diulang.", self._undo_redo_teks()]
+            return
+        self._akhir_m1()
+        self._tampil_aksi(h, r[0], r[1])
+        h.catatan = "Redo mengerjakan ULANG aksi aslinya, bukan kebalikannya. Aksi baru apa pun mengosongkan redo."
 
     def _h_queue_enqueue(self, h, kunci, nilai):
         nama = nilai[0].strip()
@@ -497,32 +455,44 @@ class Aplikasi:
         h.baris = baris
 
     # --------------------------------------------------------------- M3
-    def _h_sort(self, h, kunci, nilai):
-        algoritma = kunci[5:]
+    def _h_sort(self, h, nilai, algoritma):
         total = self.data.array.size
         n = _bulat(nilai[0], "Jumlah baris", 1, total)
         nama_kunci = nilai[1].strip()
         if nama_kunci not in ("oid", "harga", "selesai"):
             raise ValueError("Kunci harus oid, harga, atau selesai")
         kunci = kolom_sort(nama_kunci)
-        fungsi, nama_algo, kuadratik, catatan = _sort_fn(algoritma)
-        if kuadratik and n > BATAS_KUADRATIK:
-            h.modul = "M3 - " + nama_algo
-            raise ValueError("DITOLAK: batasnya %s baris, pakai merge/quick sort untuk data besar." % fmt_int(BATAS_KUADRATIK))
+        if algoritma == "insertion" and n > BATAS_INSERTION:
+            h.modul = "M3 - insertion sort"
+            raise ValueError("DITOLAK: batasnya %s baris, pakai merge sort untuk data besar." % fmt_int(BATAS_INSERTION))
         sumber = self._snapshot()
         A = [None] * n
         for i in range(n):
             A[i] = sumber[i]
         c = Pencacah()
         t0 = mulai()
-        fungsi(A, kunci, c)
+        if algoritma == "insertion":
+            insertion_sort(A, kunci, c)
+        else:
+            merge_sort(A, kunci, c)
         h.ms = selesai_ms(t0)
-        h.modul = "M3 - " + nama_algo
+        h.modul = "M3 - " + ("insertion sort" if algoritma == "insertion" else "merge sort")
         h.ringkasan = ["%s pesanan diurutkan menurut %s." % (fmt_int(n), nama_kunci),
                        "%s perbandingan, %s pemindahan." % (fmt_int(c.banding), fmt_int(c.pindah)),
                        "Urutan terverifikasi: " + ("ya" if terurut(A, kunci) else "TIDAK")]
         self._tabel_rekaman(h, A)
-        h.catatan = catatan
+        if algoritma == "insertion":
+            h.catatan = ("Menggeser hanya bila LEBIH BESAR (>), jadi stabil. Lipatduakan jumlah baris: "
+                         "perbandingan naik kira-kira empat kali. Bandingkan dengan SORT - MERGE SORT.")
+        else:
+            h.catatan = ("Penggabungan memakai <, kiri didahulukan saat kunci sama, jadi stabil. Lipatduakan "
+                         "jumlah baris: perbandingan naik sekitar dua kali.")
+
+    def _h_sort_insertion(self, h, kunci, nilai):
+        self._h_sort(h, nilai, "insertion")
+
+    def _h_sort_merge(self, h, kunci, nilai):
+        self._h_sort(h, nilai, "merge")
 
     def _h_search_linear(self, h, kunci, nilai):
         oid = _cek_oid(nilai[0])
@@ -543,6 +513,7 @@ class Aplikasi:
         h.catatan = "Data tidak perlu terurut, tetapi setiap pesanan diperiksa satu per satu dari depan."
 
     def _urut_menurut_oid(self):
+        """Daftar terurut oid dibangun sekali (merge sort). -> ms yang terpakai, atau None."""
         if self._urut_oid is not None and self._urut_versi == self.versi:
             return None
         sumber = self._snapshot()
@@ -559,16 +530,18 @@ class Aplikasi:
 
     def _h_search_binary(self, h, kunci, nilai):
         oid = _cek_oid(nilai[0])
+        t0 = mulai()
         ms_bangun = self._urut_menurut_oid()
         t1 = mulai()
         c = Pencacah()
         i = binary_search(self._urut_oid, oid, 0, c)
         h.ms = selesai_ms(t1)
         h.modul = "M3 - binary"
+        baris_awal = []
         if ms_bangun is not None:
-            baris_awal = ["Daftar terurut oid dibangun sekali dengan merge sort, %s." % fmt_ms(ms_bangun)]
+            baris_awal.append("Daftar terurut oid dibangun sekali dengan merge sort, %s." % fmt_ms(ms_bangun))
         else:
-            baris_awal = ["Memakai daftar terurut oid yang sudah dibangun (biaya pembangunan tidak diulang)."]
+            baris_awal.append("Memakai daftar terurut oid yang sudah dibangun (biaya pembangunan tidak diulang).")
         if i < 0:
             h.ringkasan = baris_awal + ["%s tidak ditemukan, %d perbandingan." % (oid, c.banding)]
         else:
@@ -581,20 +554,28 @@ class Aplikasi:
                      "200.001 baris. Syaratnya daftar SUDAH terurut menurut kunci yang dicari: di sini terurut menurut oid.")
 
 
-# ================================================================ BAGIAN UI
+# ============================================================== tampilan Tkinter
+WARNA_HEADER = "#1f3a5f"
+WARNA_AKTIF = "#dbe7f5"
+WARNA_CATATAN = "#fdf6e3"
+WARNA_GALAT = "#b00020"
+FONT_MONO = ("Menlo", 9)
+
+
 class Jendela:
     def __init__(self, root, folder_data):
         self.root = root
         self.app = Aplikasi(folder_data)
-        self.tombol = []
+        self.tombol = []             # pasangan (Menu, ttk.Button)
         self.menu_aktif = None
-        self.entri = []
+        self.entri = []              # widget variabel untuk parameter menu aktif
         self._bangun()
         self._pilih(self.app.menu[0])
 
     def _gulir(self, ev):
         self._kanvas.yview_scroll(-1 if ev.delta > 0 else 1, "units")
 
+    # --------------------------------------------------------------- tata letak
     def _bangun(self):
         r = self.root
         r.title("2EZ4U Food Delivery")
@@ -724,9 +705,9 @@ class Jendela:
         teks = "JALANKAN"
         if menu.kunci == "load":
             teks = "LOAD DATA"
-        elif menu.kunci == "stack_undo":
+        elif menu.kunci in ("stack_undo",):
             teks = "UNDO"
-        elif menu.kunci == "stack_redo":
+        elif menu.kunci in ("stack_redo",):
             teks = "REDO"
         tk.Button(self.frm_form, text=teks, bg=WARNA_HEADER, fg="white", padx=18, pady=4,
                   command=self._jalankan).grid(row=0, column=kol, sticky="sw")
@@ -786,7 +767,3 @@ def jalankan():
     root = tk.Tk()
     Jendela(root, os.path.join(akar, "data"))
     root.mainloop()
-
-
-if __name__ == "__main__":
-    jalankan()
